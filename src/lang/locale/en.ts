@@ -572,6 +572,15 @@ export default {
         'description': 'Makes heading level 2 the minimum heading level in a file for header increment and shifts all headings accordingly so they increment starting with a level 2 heading.',
       },
     },
+    // thunder-heading-table-spacing.ts
+    'thunder-heading-table-spacing': {
+      'name': 'Thunder heading and table spacing',
+      'description': 'Headings get exactly one blank line before them and none after them, except that a table directly under a heading keeps the one blank line it needs to render in Obsidian. Tables get exactly one blank line before them. Nothing is changed after a table. Stacked headings stay stacked unless Blank between headings is on.',
+      'blank-between-headings': {
+        'name': 'Blank between headings',
+        'description': 'Put a blank line between two headings in a row instead of stacking them tight',
+      },
+    },
     // heading-blank-lines.ts
     'heading-blank-lines': {
       'name': 'Heading blank lines',
