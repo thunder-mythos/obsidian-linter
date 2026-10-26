@@ -1,0 +1,61 @@
+name: Thunder Release
+
+# BRAT installs from GitHub releases, not from a branch. This workflow
+# builds the thunder branch and publishes a non-draft release that BRAT
+# can pick up. It runs on push to thunder, and by hand.
+on:
+  push:
+    branches: [thunder]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: thunder
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.19.x"
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm run minify-css
+
+      - name: Run Thunder tests
+        run: npx jest __tests__/thunder-heading-table-spacing.test.ts __tests__/every-rule-is-registered-once.test.ts
+
+      - name: Create Thunder release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE=$(node -p "require('./manifest.json').version")
+          TAG="${BASE}-thunder.${{ github.run_number }}"
+          echo "Thunder release tag: $TAG"
+          python3 - "$TAG" <<'PY'
+          import json, sys
+          tag = sys.argv[1]
+          for path in ["manifest.json", "manifest-beta.json"]:
+              with open(path) as f:
+                  data = json.load(f)
+              data["version"] = tag
+              with open(path, "w") as f:
+                  json.dump(data, f, indent=2)
+                  f.write("\n")
+          PY
+          mkdir -p thunder-release/obsidian-linter
+          cp main.js manifest.json styles.css thunder-release/obsidian-linter/
+          (cd thunder-release && zip -r ../obsidian-linter.zip obsidian-linter)
+          gh release create "$TAG" \
+            --title="Thunder $TAG" \
+            --notes="Thunder build of obsidian-linter, with the Thunder heading/table spacing rule, plus the Thunder preset. Install with BRAT from this fork." \
+            main.js manifest.json styles.css obsidian-linter.zip
